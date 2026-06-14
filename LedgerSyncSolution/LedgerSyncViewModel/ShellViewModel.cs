@@ -25,6 +25,11 @@ namespace LedgerSyncViewModel
         public SpotAccountTrade tradingAccountTrade;
         public Wallet wallet;
 
+        // ── Navigation paths (absolute pack URIs to avoid Frame path-doubling) ─
+        private const string PageMenu      = "/LedgerSync;component/UI/MenuView.xaml";
+        private const string PageSecretKey = "/LedgerSync;component/UI/SecretKeyView.xaml";
+        private const string PageTradeData = "/LedgerSync;component/UI/TradeDataView.xaml";
+
         // ── State ─────────────────────────────────────────────────────────────
         public ObservableCollection<TradeListEntity> GlobalTradeListEntities;
         public int pageNumber = 1;
@@ -63,8 +68,8 @@ namespace LedgerSyncViewModel
 
             ShellModels.CoinVisibility      = Visibility.Collapsed;
             ShellModels.SecretKeyVisibility = Visibility.Collapsed;
-            ShellModels.NavigationContent   = "UI/MenuView.xaml";
-            ShellModels.NavigationSecretKey = "UI/MenuView.xaml";
+            ShellModels.NavigationContent   = PageMenu;
+            ShellModels.NavigationSecretKey = PageMenu;
 
             bool isNewDatabase = !File.Exists(SQLiteDBPath);
             if (isNewDatabase)
@@ -97,8 +102,8 @@ namespace LedgerSyncViewModel
         {
             ShellModels.CoinVisibility      = Visibility.Collapsed;
             ShellModels.SecretKeyVisibility = Visibility.Visible;
-            ShellModels.NavigationContent   = "UI/MenuView.xaml";
-            ShellModels.NavigationSecretKey = "UI/SecretKeyView.xaml";
+            ShellModels.NavigationContent   = PageMenu;
+            ShellModels.NavigationSecretKey = PageSecretKey;
         }
 
         [RelayCommand]
@@ -106,8 +111,8 @@ namespace LedgerSyncViewModel
         {
             ShellModels.CoinVisibility      = Visibility.Visible;
             ShellModels.SecretKeyVisibility = Visibility.Collapsed;
-            ShellModels.NavigationContent   = "UI/TradeDataView.xaml";
-            ShellModels.NavigationSecretKey = "UI/MenuView.xaml";
+            ShellModels.NavigationContent   = PageTradeData;
+            ShellModels.NavigationSecretKey = PageMenu;
         }
 
         // ── SecretKey (delegates to DatabaseService) ──────────────────────────
