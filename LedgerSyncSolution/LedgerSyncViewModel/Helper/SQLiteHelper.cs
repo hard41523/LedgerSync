@@ -1,8 +1,8 @@
-﻿
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,7 +21,7 @@ namespace LedgerSyncViewModel.Helper
             _connection.Open();
         }
 
-        // 执行非查询SQL语句（INSERT, UPDATE, DELETE）
+        // Execute non-query SQL (INSERT, UPDATE, DELETE)
         public int ExecuteNonQuery(string query, Dictionary<string, object> parameters = null)
         {
             using (var cmd = new SQLiteCommand(query, _connection))
@@ -31,7 +31,7 @@ namespace LedgerSyncViewModel.Helper
             }
         }
 
-        // 执行查询SQL语句（返回单个值）
+        // Execute scalar query (returns single value)
         public object ExecuteScalar(string query, Dictionary<string, object> parameters = null)
         {
             using (var cmd = new SQLiteCommand(query, _connection))
@@ -41,7 +41,7 @@ namespace LedgerSyncViewModel.Helper
             }
         }
 
-        // 执行查询SQL语句（返回 DataTable）
+        // Execute SELECT query (returns DataTable)
         public DataTable ExecuteQuery(string query, Dictionary<string, object> parameters = null)
         {
             using (var cmd = new SQLiteCommand(query, _connection))
@@ -56,7 +56,7 @@ namespace LedgerSyncViewModel.Helper
             }
         }
 
-        // 添加参数到命令
+        // Add parameters to command
         private void AddParameters(SQLiteCommand cmd, Dictionary<string, object> parameters)
         {
             if (parameters != null)
@@ -68,8 +68,9 @@ namespace LedgerSyncViewModel.Helper
             }
         }
 
-        // 事务处理
-        public void ExecuteTransaction(List<string> queries)
+        // FIX: ExecuteTransaction now accepts parameters per query to prevent SQL injection
+        // Each entry: (sql query, optional parameters dictionary)
+        public void ExecuteTransaction(List<(string Query, Dictionary<string, object> Parameters)> queries)
         {
             using (var transaction = _connection.BeginTransaction())
             {
@@ -77,15 +78,18 @@ namespace LedgerSyncViewModel.Helper
                 {
                     try
                     {
-                        foreach (var query in queries)
+                        foreach (var (query, parameters) in queries)
                         {
                             cmd.CommandText = query;
+                            cmd.Parameters.Clear();
+                            AddParameters(cmd, parameters);
                             cmd.ExecuteNonQuery();
                         }
                         transaction.Commit();
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        Debug.WriteLine($"SQLiteHelper transaction rollback: {ex.Message}");
                         transaction.Rollback();
                         throw;
                     }
@@ -93,7 +97,7 @@ namespace LedgerSyncViewModel.Helper
             }
         }
 
-        // 释放资源
+        // Release resources
         public void Dispose()
         {
             _connection?.Close();
