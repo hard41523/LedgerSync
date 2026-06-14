@@ -26,7 +26,6 @@ namespace LedgerSyncViewModel
         {
             shellModels = new ShellModel();
 
-            // Generate year list dynamically from 2017 to current year
             for (int y = 2017; y <= DateTime.Now.Year; y++)
                 ShellModels.ObservableCollectionYear.Add(y.ToString());
 
@@ -73,7 +72,7 @@ namespace LedgerSyncViewModel
             if (isNewDatabase)
             {
                 SQLiteConnection.CreateFile(SQLiteDBPath);
-                Debug.WriteLine("LedgerSync.db");
+                Debug.WriteLine("LedgerSync.db created");
                 CreateSecretKey();
                 CreateTradeList();
                 CreateCoin();
@@ -125,7 +124,6 @@ namespace LedgerSyncViewModel
         {
             string isHave = selectCoin;
             Symbol = Symbol + "USDT";
-            var newSymbol = Symbol;
 
             Ioc.Default.GetService<TradeDataViewModel>().TradeDataModels.ObservableCollectionTradeListEntity.Clear();
             GlobalTradeListEntities.Clear();
@@ -136,14 +134,11 @@ namespace LedgerSyncViewModel
                 string query = "SELECT * FROM TradeList WHERE Symbol=@Symbol";
                 using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
                 {
-                    cmd.Parameters.AddWithValue("@Year", "Year" + "BTCUSDT");
-                    cmd.Parameters.AddWithValue("@Month", "Month" + "BTCUSDT");
-                    cmd.Parameters.AddWithValue("@Symbol", Symbol + "USDT");
+                    cmd.Parameters.AddWithValue("@Symbol", Symbol);
                     using (SQLiteDataReader reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            Debug.WriteLine($"ID: {reader["ID"]}, TradeListID: {reader["TradeListID"]}, Symbol: {reader["Symbol"]}, IsBuyers: {reader["IsBuyers"]}, Price: {reader["Price"]}, QTY: {reader["QTY"]}, Time: {reader["Time"]}");
                             isHave = reader["ID"].ToString();
                             TradeListEntity tradeListEntity = new TradeListEntity();
                             tradeListEntity.TradeListID = reader["TradeListID"].ToString();
@@ -163,7 +158,6 @@ namespace LedgerSyncViewModel
                 }
             }
 
-            isHave = selectCoin;
             pageNumber = 1;
             int totalPages = (int)Math.Ceiling((double)GlobalTradeListEntities.Count / 20);
             ShellModels.TotalPage = totalPages;
@@ -177,13 +171,22 @@ namespace LedgerSyncViewModel
                 QueryTradeListYearMonth(ShellModels.ItemYear, month, selectCoin);
         }
 
+        // FIX: await SyncData + reset WaitingVisibility in finally
         [RelayCommand]
-        public void SyncDataLocal()
+        public async void SyncDataLocal()
         {
-            Ioc.Default.GetService<TradeDataViewModel>().Print();
-            Ioc.Default.GetService<ShellViewModel>().ShellModels.ObservableCollectionCoinEntity = Ioc.Default.GetService<TradeDataViewModel>().TradeDataModels.ObservableCollectionCoinEntity;
             ShellModels.WaitingVisibility = Visibility.Visible;
-            Ioc.Default.GetService<TradeDataViewModel>().SyncData();
+            try
+            {
+                Ioc.Default.GetService<TradeDataViewModel>().Print();
+                Ioc.Default.GetService<ShellViewModel>().ShellModels.ObservableCollectionCoinEntity =
+                    Ioc.Default.GetService<TradeDataViewModel>().TradeDataModels.ObservableCollectionCoinEntity;
+                await Ioc.Default.GetService<TradeDataViewModel>().SyncData();
+            }
+            finally
+            {
+                ShellModels.WaitingVisibility = Visibility.Collapsed;
+            }
         }
 
         [RelayCommand]
@@ -223,15 +226,10 @@ namespace LedgerSyncViewModel
         }
         #endregion
 
-        #region MiniSystem
+        #region Window controls
         [RelayCommand]
-        public void MiniSystem()
-        {
-            ShellModels.SystemState = WindowState.Minimized;
-        }
-        #endregion
+        public void MiniSystem() => ShellModels.SystemState = WindowState.Minimized;
 
-        #region MaxSystem
         [RelayCommand]
         public void MaxSystem()
         {
@@ -246,14 +244,9 @@ namespace LedgerSyncViewModel
                 ShellModels.MaxOrNormal = "\uEF2E";
             }
         }
-        #endregion
 
-        #region ExitSystem
         [RelayCommand]
-        public void ExitSystem()
-        {
-            Environment.Exit(0);
-        }
+        public void ExitSystem() => Environment.Exit(0);
         #endregion
 
         [RelayCommand]
@@ -295,54 +288,57 @@ namespace LedgerSyncViewModel
             Application.Current.Resources.MergedDictionaries.Remove(resourceDictionary);
             Application.Current.Resources.MergedDictionaries.Add(resourceDictionary);
 
-            // Notify LocExtension bindings that language has changed
             LocalizationManager.ChangeCulture(culture);
         }
 
+        // FIX: removed leftover test code (INSERT INTO Users / SELECT FROM Users)
+        // that caused runtime crash on first launch with a fresh database
         public void CreateSecretKey()
         {
-            using var db = new SQLiteHelper(Ioc.Default.GetService<ShellViewModel>().SQLiteDBPath);
+            using var db = new SQLiteHelper(SQLiteDBPath);
             db.ExecuteNonQuery(SQLiteDBCreateSecretKeySQL);
         }
 
         public void CreateTradeList()
         {
-            using var db = new SQLiteHelper(Ioc.Default.GetService<ShellViewModel>().SQLiteDBPath);
+            using var db = new SQLiteHelper(SQLiteDBPath);
             db.ExecuteNonQuery(SQLiteDBCreateTradeListSQL);
         }
 
         public void CreateCoin()
         {
-            using var db = new SQLiteHelper(Ioc.Default.GetService<ShellViewModel>().SQLiteDBPath);
+            using var db = new SQLiteHelper(SQLiteDBPath);
             db.ExecuteNonQuery(SQLiteDBCreateCoinSQL);
         }
 
         /// <summary>
-        /// Encrypts API keys with DPAPI before storing in SQLite.
+        /// FIX: DELETE existing row first (upsert pattern) to prevent unbounded table growth.
+        /// Keys are encrypted with DPAPI before storing.
         /// </summary>
         public void InsertSecretKey()
         {
-            string apiKey = CryptoHelper.Encrypt(
-                Ioc.Default.GetService<SecretKeyViewModel>().SecretKeyModels.ApiKey);
-            string apiSecret = CryptoHelper.Encrypt(
-                Ioc.Default.GetService<SecretKeyViewModel>().SecretKeyModels.ApiSecret);
+            string apiKey    = CryptoHelper.Encrypt(Ioc.Default.GetService<SecretKeyViewModel>().SecretKeyModels.ApiKey);
+            string apiSecret = CryptoHelper.Encrypt(Ioc.Default.GetService<SecretKeyViewModel>().SecretKeyModels.ApiSecret);
 
             using (var connection = new SQLiteConnection($"Data Source={SQLiteDBPath};Version=3;"))
             {
                 connection.Open();
+                // Delete old row so only one row ever exists
+                using (var del = new SQLiteCommand("DELETE FROM SecretKey", connection))
+                    del.ExecuteNonQuery();
+
                 using (var cmd = new SQLiteCommand(SQLiteDBInsertSecretKeySQL, connection))
                 {
                     cmd.Parameters.AddWithValue("@ApiKey", apiKey);
                     cmd.Parameters.AddWithValue("@ApiSecret", apiSecret);
                     int rowsAffected = cmd.ExecuteNonQuery();
-                    Debug.WriteLine(rowsAffected);
+                    Debug.WriteLine($"InsertSecretKey rows: {rowsAffected}");
                 }
             }
         }
 
         /// <summary>
-        /// Reads encrypted API keys from SQLite and decrypts with DPAPI before use.
-        /// Falls back gracefully if old unencrypted row is found.
+        /// Reads encrypted API keys and decrypts with DPAPI before use.
         /// </summary>
         public void QuerySecretKey()
         {
@@ -357,8 +353,7 @@ namespace LedgerSyncViewModel
                         int id = reader.GetInt32(0);
                         string apiKey    = CryptoHelper.Decrypt(reader.GetString(1));
                         string apiSecret = CryptoHelper.Decrypt(reader.GetString(2));
-
-                        Debug.WriteLine($"ID: {id}");
+                        Debug.WriteLine($"QuerySecretKey ID: {id}");
                         Ioc.Default.GetService<SecretKeyViewModel>().SecretKeyModels.ApiKey    = apiKey;
                         Ioc.Default.GetService<SecretKeyViewModel>().SecretKeyModels.ApiSecret = apiSecret;
                     }
@@ -404,13 +399,8 @@ namespace LedgerSyncViewModel
                 {
                     cmd.Parameters.AddWithValue("@TradeListID", TradeListID);
                     using (SQLiteDataReader reader = cmd.ExecuteReader())
-                    {
                         while (reader.Read())
-                        {
-                            Debug.WriteLine($"ID: {reader["ID"]}, TradeListID: {reader["TradeListID"]}, Symbol: {reader["Symbol"]}, IsBuyers: {reader["IsBuyers"]}, Price: {reader["Price"]}, QTY: {reader["QTY"]}, Time: {reader["Time"]}");
                             isHave = reader["ID"].ToString();
-                        }
-                    }
                 }
             }
             return isHave;
@@ -418,7 +408,6 @@ namespace LedgerSyncViewModel
 
         public void QueryTradeListYearMonth(string Year, string Month, string Symbol)
         {
-            string isHave = "";
             Ioc.Default.GetService<TradeDataViewModel>().TradeDataModels.ObservableCollectionTradeListEntity.Clear();
             using (SQLiteConnection conn = new SQLiteConnection($"Data Source={SQLiteDBPath};Version=3;"))
             {
@@ -433,17 +422,15 @@ namespace LedgerSyncViewModel
                     {
                         while (reader.Read())
                         {
-                            Debug.WriteLine($"ID: {reader["ID"]}, TradeListID: {reader["TradeListID"]}, Symbol: {reader["Symbol"]}, IsBuyers: {reader["IsBuyers"]}, Price: {reader["Price"]}, QTY: {reader["QTY"]}, Time: {reader["Time"]}");
-                            isHave = reader["ID"].ToString();
                             TradeListEntity tradeListEntity = new TradeListEntity();
                             tradeListEntity.TradeListID = reader["TradeListID"].ToString();
-                            tradeListEntity.Symbol = reader["Symbol"].ToString();
-                            tradeListEntity.IsBuyers = reader["IsBuyers"].ToString();
-                            tradeListEntity.Price = reader["Price"].ToString();
-                            tradeListEntity.QTY = reader["QTY"].ToString();
-                            tradeListEntity.Year = reader["Year"].ToString();
-                            tradeListEntity.Month = reader["Month"].ToString();
-                            tradeListEntity.Time = reader["Time"].ToString();
+                            tradeListEntity.Symbol      = reader["Symbol"].ToString();
+                            tradeListEntity.IsBuyers    = reader["IsBuyers"].ToString();
+                            tradeListEntity.Price       = reader["Price"].ToString();
+                            tradeListEntity.QTY         = reader["QTY"].ToString();
+                            tradeListEntity.Year        = reader["Year"].ToString();
+                            tradeListEntity.Month       = reader["Month"].ToString();
+                            tradeListEntity.Time        = reader["Time"].ToString();
                             Ioc.Default.GetService<TradeDataViewModel>().TradeDataModels.ObservableCollectionTradeListEntity.Add(tradeListEntity);
                         }
                     }
@@ -478,13 +465,8 @@ namespace LedgerSyncViewModel
                 {
                     cmd.Parameters.AddWithValue("@Asset", Asset);
                     using (SQLiteDataReader reader = cmd.ExecuteReader())
-                    {
                         while (reader.Read())
-                        {
-                            Debug.WriteLine($"ID: {reader["ID"]}, Asset: {reader["Asset"]}, Free: {reader["Free"]}");
                             isHave = reader["ID"].ToString();
-                        }
-                    }
                 }
             }
             return isHave;
