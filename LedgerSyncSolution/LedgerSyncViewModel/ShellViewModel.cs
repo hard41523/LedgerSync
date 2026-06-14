@@ -1,4 +1,4 @@
-﻿using Binance.Spot;
+using Binance.Spot;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
@@ -27,21 +27,15 @@ namespace LedgerSyncViewModel
         {
             shellModels = new ShellModel();
 
-
-            ShellModels.ObservableCollectionYear.Add("2017");
-            ShellModels.ObservableCollectionYear.Add("2018");
-            ShellModels.ObservableCollectionYear.Add("2019");
-            ShellModels.ObservableCollectionYear.Add("2020");
-            ShellModels.ObservableCollectionYear.Add("2021");
-            ShellModels.ObservableCollectionYear.Add("2022");
-            ShellModels.ObservableCollectionYear.Add("2023");
-            ShellModels.ObservableCollectionYear.Add("2024");
-            ShellModels.ObservableCollectionYear.Add("2025");
+            // FIX: Generate year list dynamically instead of hardcoded values
+            int currentYear = DateTime.Now.Year;
+            for (int year = 2017; year <= currentYear; year++)
+            {
+                ShellModels.ObservableCollectionYear.Add(year.ToString());
+            }
 
             ShellModels.ObservableCollectionLanguage.Add("zh-CN");
             ShellModels.ObservableCollectionLanguage.Add("en-US");
-
-
 
             ShellModels.ItemYear = ShellModels.ObservableCollectionYear[ShellModels.ObservableCollectionYear.Count - 1];
             GlobalTradeListEntities = new ObservableCollection<TradeListEntity>();
@@ -49,6 +43,7 @@ namespace LedgerSyncViewModel
             ShellModels.TotalPage = 1;
             ShellModels.WaitingVisibility = Visibility.Collapsed;
         }
+
         public SpotAccountTrade tradingAccountTrade;
         public Wallet wallet;
 
@@ -94,8 +89,9 @@ Month VARCHAR(255) NOT NULL,
         [ObservableProperty]
         private ShellModel shellModels;
 
+        // FIX: Removed async keyword - no await is used in this method
         [RelayCommand]
-        public async void ShellViewLoad(FrameworkElement frameworkElement)
+        public void ShellViewLoad(FrameworkElement frameworkElement)
         {
             window = (Window)frameworkElement;
             window.MouseLeftButtonDown += delegate { window.DragMove(); };
@@ -106,7 +102,6 @@ Month VARCHAR(255) NOT NULL,
             bool isNewDatabase = !File.Exists(SQLiteDBPath);
             if (isNewDatabase)
             {
-                //SQLiteConnection.CreateFile(SQLiteDBPath);
                 Debug.WriteLine("数据库文件不存在，已创建 LedgerSync.db！");
                 CreateSecretKey();
                 CreateTradeList();
@@ -126,8 +121,9 @@ Month VARCHAR(255) NOT NULL,
         }
 
 
+        // FIX: Removed async keyword - no await is used in this method
         [RelayCommand]
-        public async void SecretKey()
+        public void SecretKey()
         {
             ShellModels.CoinVisibility = Visibility.Collapsed;
             ShellModels.SecretKeyVisibility = Visibility.Visible;
@@ -136,8 +132,9 @@ Month VARCHAR(255) NOT NULL,
         }
 
 
+        // FIX: Removed async keyword - no await is used in this method
         [RelayCommand]
-        public async void TradeData()
+        public void TradeData()
         {
             ShellModels.CoinVisibility = Visibility.Visible;
             ShellModels.SecretKeyVisibility = Visibility.Collapsed;
@@ -157,8 +154,6 @@ Month VARCHAR(255) NOT NULL,
         {
             string isHave = "";
             selectCoin = Symbol;
-            //var newSymbol = Symbol + "USDT";
-            //Symbol = newSymbol;
             Ioc.Default.GetService<TradeDataViewModel>().TradeDataModels.ObservableCollectionTradeListEntity.Clear();
             GlobalTradeListEntities.Clear();
             using (SQLiteConnection conn = new SQLiteConnection($"Data Source={SQLiteDBPath};Version=3;"))
@@ -168,16 +163,12 @@ Month VARCHAR(255) NOT NULL,
 
                 using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
                 {
-                    //cmd.Parameters.AddWithValue("@Year", Year); // 查询 BTCUSDT 交易记录
-                    //cmd.Parameters.AddWithValue("@Month", Month); // 查询 BTCUSDT 交易记录
                     cmd.Parameters.AddWithValue("@Symbol", Symbol + "USDT");
                     using (SQLiteDataReader reader = cmd.ExecuteReader())
                     {
-
-                        while (reader.Read())  // 逐行读取数据
+                        while (reader.Read())
                         {
                             Debug.WriteLine($"ID: {reader["ID"]}, TradeListID: {reader["TradeListID"]}, Symbol: {reader["Symbol"]}, " + $"IsBuyers: {reader["IsBuyers"]}, Price: {reader["Price"]}, QTY: {reader["QTY"]}, Time: {reader["Time"]}");
-                            //isHave = reader["ID"].ToString();
 
                             TradeListEntity tradeListEntity = new TradeListEntity();
                             tradeListEntity.TradeListID = reader["TradeListID"].ToString();
@@ -189,17 +180,13 @@ Month VARCHAR(255) NOT NULL,
                             tradeListEntity.Month = reader["Month"].ToString();
                             tradeListEntity.Time = reader["Time"].ToString();
                             GlobalTradeListEntities.Add(tradeListEntity);
-                            //Ioc.Default.GetService<TradeDataViewModel>().TradeDataModels.ObservableCollectionTradeListEntity.Add(tradeListEntity);
-
                         }
                     }
                 }
             }
 
-            //获取前20条记录。
             Ioc.Default.GetService<TradeDataViewModel>().TradeDataModels.ObservableCollectionTradeListEntity = new ObservableCollection<TradeListEntity>(GlobalTradeListEntities.Take(20));
 
-            //return isHave;
             pageNumber = 1;
             int totalPages = (int)Math.Ceiling((double)GlobalTradeListEntities.Count / 20);
             ShellModels.TotalPage = totalPages;
@@ -213,22 +200,18 @@ Month VARCHAR(255) NOT NULL,
             {
                 QueryTradeListYearMonth(ShellModels.ItemYear, month, selectCoin);
             }
-
         }
 
         [RelayCommand]
         public void SyncDataLocal()
         {
-            //Ioc.Default.GetService<TradeDataViewModel>().Print();
-            //Ioc.Default.GetService<ShellViewModel>().ShellModels.ObservableCollectionCoinEntity = TradeDataModels.ObservableCollectionCoinEntity;
             ShellModels.WaitingVisibility = Visibility.Visible;
             Ioc.Default.GetService<TradeDataViewModel>().SyncData();
         }
-        //Analyze
+
         [RelayCommand]
         public void AnalyzeTradeList()
         {
-
         }
 
         [RelayCommand]
@@ -237,7 +220,7 @@ Month VARCHAR(255) NOT NULL,
             Ioc.Default.GetService<TradeDataViewModel>().Print();
         }
 
-        #region ExitSystem
+        #region PreviousContent
 
         [RelayCommand]
         public void PreviousContent()
@@ -247,9 +230,9 @@ Month VARCHAR(255) NOT NULL,
             if (pageNumber <= 0)
             {
                 pageNumber = 1;
-                //pagedData = GlobalTradeListEntities.Skip((pageNumber - 1) * 20).Take(20).ToList();
             }
-            var pagedData = GlobalTradeListEntities.Skip((pageNumber) * 20).Take(20).ToList();
+            // FIX: was Skip(pageNumber * 20) which skipped page 1 entirely
+            var pagedData = GlobalTradeListEntities.Skip((pageNumber - 1) * 20).Take(20).ToList();
             Ioc.Default.GetService<TradeDataViewModel>().TradeDataModels.ObservableCollectionTradeListEntity.Clear();
             Ioc.Default.GetService<TradeDataViewModel>().TradeDataModels.ObservableCollectionTradeListEntity = new ObservableCollection<TradeListEntity>(pagedData);
             ShellModels.CurrentPage = pageNumber;
@@ -258,7 +241,7 @@ Month VARCHAR(255) NOT NULL,
 
         #endregion
 
-        #region ExitSystem
+        #region NextContent
 
         [RelayCommand]
         public void NextContent()
@@ -268,9 +251,9 @@ Month VARCHAR(255) NOT NULL,
             if (pageNumber > totalPages)
             {
                 pageNumber--;
-                //pagedData = GlobalTradeListEntities.Skip((pageNumber - 1) * 20).Take(20).ToList();
             }
-            var pagedData = GlobalTradeListEntities.Skip((pageNumber) * 20).Take(20).ToList();
+            // FIX: consistent formula (pageNumber - 1) * 20
+            var pagedData = GlobalTradeListEntities.Skip((pageNumber - 1) * 20).Take(20).ToList();
             Ioc.Default.GetService<TradeDataViewModel>().TradeDataModels.ObservableCollectionTradeListEntity.Clear();
             Ioc.Default.GetService<TradeDataViewModel>().TradeDataModels.ObservableCollectionTradeListEntity = new ObservableCollection<TradeListEntity>(pagedData);
             ShellModels.CurrentPage = pageNumber;
@@ -294,19 +277,13 @@ Month VARCHAR(255) NOT NULL,
         [RelayCommand]
         public void MaxSystem()
         {
-            // \uE002
-            // <!--&#xEF2F; 默认状态-->
-            //<!--&#xEF2E; 最大状态-->
             if (ShellModels.SystemState != WindowState.Maximized)
             {
-
                 ShellModels.SystemState = WindowState.Maximized;
-                //ShellModels.MaxOrNormal = "\uEF2F";
             }
             else
             {
                 ShellModels.SystemState = WindowState.Normal;
-                //ShellModels.MaxOrNormal = "\uEF2E";
             }
         }
 
@@ -327,15 +304,12 @@ Month VARCHAR(255) NOT NULL,
         {
             if (ShellModels.ItemLanguage == "zh-CN")
             {
-                //ChangeLanguage("zh-CN");  // 切换到中文
                 SwitchLanguage("zh-CN");
             }
             else
             {
-                //ChangeLanguage("en-US");  // 切换到英文
                 SwitchLanguage("en-US");
             }
-
         }
 
         #region Action
@@ -345,11 +319,8 @@ Month VARCHAR(255) NOT NULL,
             string dictPath = $"/LedgerSync;component/Resources/Strings.{culture}.xaml";
             var dict = new ResourceDictionary { Source = new Uri(dictPath, UriKind.Relative) };
 
-            // 移除旧的语言字典（假设始终是第一个）
             var oldDict = Application.Current.Resources.MergedDictionaries[0];
             Application.Current.Resources.MergedDictionaries.Remove(oldDict);
-
-            // 加入新的
             Application.Current.Resources.MergedDictionaries.Insert(0, dict);
         }
 
@@ -370,19 +341,7 @@ Month VARCHAR(255) NOT NULL,
         {
             using (var db = new SQLiteHelper(Ioc.Default.GetService<ShellViewModel>().SQLiteDBPath))
             {
-                // 创建表
                 db.ExecuteNonQuery(SQLiteDBCreateSecretKeySQL);
-
-                //// 插入数据
-                //db.ExecuteNonQuery("INSERT INTO Users (Name, Age) VALUES (@name, @age);",
-                //    new Dictionary<string, object> { { "@name", "Alice" }, { "@age", 25 } });
-
-                // 查询数据
-                //var result = db.ExecuteQuery("SELECT * FROM Users;");
-                //foreach (DataRow row in result.Rows)
-                //{
-                //    Console.WriteLine($"ID: {row["Id"]}, Name: {row["Name"]}, Age: {row["Age"]}");
-                //}
             }
         }
 
@@ -390,19 +349,7 @@ Month VARCHAR(255) NOT NULL,
         {
             using (var db = new SQLiteHelper(Ioc.Default.GetService<ShellViewModel>().SQLiteDBPath))
             {
-                // 创建表
                 db.ExecuteNonQuery(SQLiteDBCreateTradeListSQL);
-
-                //// 插入数据
-                //db.ExecuteNonQuery("INSERT INTO Users (Name, Age) VALUES (@name, @age);",
-                //    new Dictionary<string, object> { { "@name", "Alice" }, { "@age", 25 } });
-
-                // 查询数据
-                //var result = db.ExecuteQuery("SELECT * FROM Users;");
-                //foreach (DataRow row in result.Rows)
-                //{
-                //    Console.WriteLine($"ID: {row["Id"]}, Name: {row["Name"]}, Age: {row["Age"]}");
-                //}
             }
         }
 
@@ -410,26 +357,14 @@ Month VARCHAR(255) NOT NULL,
         {
             using (var db = new SQLiteHelper(Ioc.Default.GetService<ShellViewModel>().SQLiteDBPath))
             {
-                // 创建表
                 db.ExecuteNonQuery(SQLiteDBCreateCoinSQL);
-
-                //// 插入数据
-                //db.ExecuteNonQuery("INSERT INTO Users (Name, Age) VALUES (@name, @age);",
-                //    new Dictionary<string, object> { { "@name", "Alice" }, { "@age", 25 } });
-
-                // 查询数据
-                //var result = db.ExecuteQuery("SELECT * FROM Users;");
-                //foreach (DataRow row in result.Rows)
-                //{
-                //    Console.WriteLine($"ID: {row["Id"]}, Name: {row["Name"]}, Age: {row["Age"]}");
-                //}
             }
         }
 
         public void InsertSecretKey()
         {
-            string apiKey = Ioc.Default.GetService<SecretKeyViewModel>().SecretKeyModels.ApiKey;// "your_api_key";
-            string apiSecret = Ioc.Default.GetService<SecretKeyViewModel>().SecretKeyModels.ApiSecret;// "your_api_secret";
+            string apiKey = Ioc.Default.GetService<SecretKeyViewModel>().SecretKeyModels.ApiKey;
+            string apiSecret = Ioc.Default.GetService<SecretKeyViewModel>().SecretKeyModels.ApiSecret;
 
             using (var connection = new SQLiteConnection($"Data Source={SQLiteDBPath};Version=3;"))
             {
@@ -440,7 +375,6 @@ Month VARCHAR(255) NOT NULL,
                     cmd.Parameters.AddWithValue("@ApiKey", apiKey);
                     cmd.Parameters.AddWithValue("@ApiSecret", apiSecret);
                     int rowsAffected = cmd.ExecuteNonQuery();
-
                     Debug.WriteLine($"成功插入 {rowsAffected} 条数据！");
                 }
             }
@@ -455,7 +389,7 @@ Month VARCHAR(255) NOT NULL,
                 using (var cmd = new SQLiteCommand(query, connection))
                 using (var reader = cmd.ExecuteReader())
                 {
-                    if (reader.Read())  // 读取一行数据
+                    if (reader.Read())
                     {
                         int id = reader.GetInt32(0);
                         string apiKey = reader.GetString(1);
@@ -463,8 +397,8 @@ Month VARCHAR(255) NOT NULL,
 
                         Debug.WriteLine($"最大 ID 记录 -> ID: {id}, ApiKey: {apiKey}, ApiSecret: {apiSecret}");
 
-                        Ioc.Default.GetService<SecretKeyViewModel>().SecretKeyModels.ApiKey = apiKey;// "your_api_key";
-                        Ioc.Default.GetService<SecretKeyViewModel>().SecretKeyModels.ApiSecret = apiSecret;// "your_api_secret";
+                        Ioc.Default.GetService<SecretKeyViewModel>().SecretKeyModels.ApiKey = apiKey;
+                        Ioc.Default.GetService<SecretKeyViewModel>().SecretKeyModels.ApiSecret = apiSecret;
                     }
                     else
                     {
@@ -509,11 +443,11 @@ Month VARCHAR(255) NOT NULL,
 
                 using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
                 {
-                    cmd.Parameters.AddWithValue("@TradeListID", TradeListID); // 查询 BTCUSDT 交易记录
+                    cmd.Parameters.AddWithValue("@TradeListID", TradeListID);
 
                     using (SQLiteDataReader reader = cmd.ExecuteReader())
                     {
-                        while (reader.Read())  // 逐行读取数据
+                        while (reader.Read())
                         {
                             Debug.WriteLine($"ID: {reader["ID"]}, TradeListID: {reader["TradeListID"]}, Symbol: {reader["Symbol"]}, " + $"IsBuyers: {reader["IsBuyers"]}, Price: {reader["Price"]}, QTY: {reader["QTY"]}, Time: {reader["Time"]}");
                             isHave = reader["ID"].ToString();
@@ -535,16 +469,14 @@ Month VARCHAR(255) NOT NULL,
 
                 using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
                 {
-                    cmd.Parameters.AddWithValue("@Year", Year); // 查询 BTCUSDT 交易记录
-                    cmd.Parameters.AddWithValue("@Month", Month); // 查询 BTCUSDT 交易记录
+                    cmd.Parameters.AddWithValue("@Year", Year);
+                    cmd.Parameters.AddWithValue("@Month", Month);
                     cmd.Parameters.AddWithValue("@Symbol", Symbol + "USDT");
                     using (SQLiteDataReader reader = cmd.ExecuteReader())
                     {
-
-                        while (reader.Read())  // 逐行读取数据
+                        while (reader.Read())
                         {
                             Debug.WriteLine($"ID: {reader["ID"]}, TradeListID: {reader["TradeListID"]}, Symbol: {reader["Symbol"]}, " + $"IsBuyers: {reader["IsBuyers"]}, Price: {reader["Price"]}, QTY: {reader["QTY"]}, Time: {reader["Time"]}");
-                            //isHave = reader["ID"].ToString();
 
                             TradeListEntity tradeListEntity = new TradeListEntity();
                             tradeListEntity.TradeListID = reader["TradeListID"].ToString();
@@ -556,15 +488,11 @@ Month VARCHAR(255) NOT NULL,
                             tradeListEntity.Month = reader["Month"].ToString();
                             tradeListEntity.Time = reader["Time"].ToString();
                             Ioc.Default.GetService<TradeDataViewModel>().TradeDataModels.ObservableCollectionTradeListEntity.Add(tradeListEntity);
-
                         }
                     }
                 }
             }
-            //return isHave;
         }
-
-
 
         public void InsertCoin(string Free, string Asset)
         {
@@ -575,8 +503,8 @@ Month VARCHAR(255) NOT NULL,
 
                 using (SQLiteCommand cmd = new SQLiteCommand(insertQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@Free", Free);  // 资产数量
-                    cmd.Parameters.AddWithValue("@Asset", Asset); // 资产名称
+                    cmd.Parameters.AddWithValue("@Free", Free);
+                    cmd.Parameters.AddWithValue("@Asset", Asset);
 
                     int rowsAffected = cmd.ExecuteNonQuery();
                     Debug.WriteLine($"插入Coin成功，影响行数：{rowsAffected}");
@@ -594,12 +522,11 @@ Month VARCHAR(255) NOT NULL,
 
                 using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
                 {
-
-                    cmd.Parameters.AddWithValue("@Asset", Asset); // 查询 BTCUSDT 交易记录
+                    cmd.Parameters.AddWithValue("@Asset", Asset);
 
                     using (SQLiteDataReader reader = cmd.ExecuteReader())
                     {
-                        while (reader.Read())  // 逐行读取数据
+                        while (reader.Read())
                         {
                             Debug.WriteLine($"ID: {reader["ID"]}, Asset: {reader["Asset"]}, Free: {reader["Free"]}");
                             isHave = reader["ID"].ToString();
