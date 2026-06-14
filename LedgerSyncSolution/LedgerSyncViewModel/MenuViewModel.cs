@@ -1,4 +1,3 @@
-﻿using Binance.Spot;
 using CommunityToolkit.Mvvm.ComponentModel;
 using LedgerSyncModel;
 using System;
@@ -9,21 +8,15 @@ using System.Threading.Tasks;
 
 namespace LedgerSyncViewModel
 {
-   public partial class MenuViewModel : ObservableObject
+    public partial class MenuViewModel : ObservableObject
     {
-        public  MenuViewModel()
+        public MenuViewModel()
         {
             menuModels = new MenuModel();
-
-
         }
 
-        SpotAccountTrade tradingAccountTrade;
-
+        // FIX: removed unused SpotAccountTrade field (was declared but never initialized or used)
         [ObservableProperty]
         private MenuModel menuModels;
-
-
-
     }
 }

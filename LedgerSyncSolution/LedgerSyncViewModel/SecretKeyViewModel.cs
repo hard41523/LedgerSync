@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using LedgerSyncModel;
@@ -22,31 +22,24 @@ namespace LedgerSyncViewModel
         [ObservableProperty]
         private SecretKeyModel secretKeyModels;
 
+        // FIX: removed async - no await used, async void is dangerous (swallows exceptions)
         [RelayCommand]
-        public async void SecretKeyViewLoad()
+        public void SecretKeyViewLoad()
         {
-
-            //var priceresult = await tradingAccountTrade.AccountTradeList("BTCUSDT");
-
-            //var result = await tradingAccountTrade.AccountInformation(8000);
-
-            //var results = await wallet.FundingWallet();
-            //Ioc.Default.GetService<ShellViewModel>()
             if (!string.IsNullOrEmpty(SecretKeyModels.ApiKey) && !string.IsNullOrEmpty(SecretKeyModels.ApiSecret))
             {
                 Ioc.Default.GetService<ShellViewModel>().QuerySecretKey();
             }
-
         }
 
+        // FIX: removed async - no await used
         [RelayCommand]
-        public async void SaveSecretKey()
+        public void SaveSecretKey()
         {
-            if (!string.IsNullOrEmpty( SecretKeyModels.ApiKey) && !string.IsNullOrEmpty(SecretKeyModels.ApiSecret)) 
+            if (!string.IsNullOrEmpty(SecretKeyModels.ApiKey) && !string.IsNullOrEmpty(SecretKeyModels.ApiSecret))
             {
                 Ioc.Default.GetService<ShellViewModel>().InsertSecretKey();
             }
-   
         }
     }
 }
