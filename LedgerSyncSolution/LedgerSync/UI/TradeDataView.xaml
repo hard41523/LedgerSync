@@ -33,8 +33,7 @@
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <Button Grid.Column="0"
-   
-                    Style="{StaticResource  ButtonStyleNew}"
+                    Style="{DynamicResource ButtonStyleNew}"
                     Content="{DynamicResource Coin}"
                     FontSize="24"
                     Foreground="Black"
@@ -47,8 +46,7 @@
                     VerticalContentAlignment="Center"
                     Cursor="Hand" />
             <Button Grid.Column="1"
-
-                    Style="{StaticResource  ButtonStyleNew}"
+                    Style="{DynamicResource ButtonStyleNew}"
                     Content="{DynamicResource Type}"
                     FontSize="24"
                     Foreground="Black"
@@ -61,8 +59,7 @@
                     VerticalContentAlignment="Center"
                     Cursor="Hand" />
             <Button Grid.Column="2"
-
-                    Style="{StaticResource  ButtonStyleNew}"
+                    Style="{DynamicResource ButtonStyleNew}"
                     Content="{DynamicResource Price}"
                     FontSize="24"
                     Foreground="Black"
@@ -75,8 +72,7 @@
                     VerticalContentAlignment="Center"
                     Cursor="Hand" />
             <Button Grid.Column="3"
-
-                    Style="{StaticResource  ButtonStyleNew}"
+                    Style="{DynamicResource ButtonStyleNew}"
                     Content="{DynamicResource Quantity}"
                     FontSize="24"
                     Foreground="Black"
@@ -89,8 +85,7 @@
                     VerticalContentAlignment="Center"
                     Cursor="Hand" />
             <Button Grid.Column="4"
-  
-                    Style="{StaticResource  ButtonStyleNew}"
+                    Style="{DynamicResource ButtonStyleNew}"
                     Content="{DynamicResource Time}"
                     FontSize="24"
                     Foreground="Black"
@@ -102,11 +97,10 @@
                     HorizontalContentAlignment="Left"
                     VerticalContentAlignment="Center"
                     Cursor="Hand" />
-
         </Grid>
         <ListBox  Grid.Row="1"
                   Background="Transparent"
-                  ItemsSource="{Binding  TradeDataModels.ObservableCollectionTradeListEntity,UpdateSourceTrigger=PropertyChanged}"
+                  ItemsSource="{Binding TradeDataModels.ObservableCollectionTradeListEntity,UpdateSourceTrigger=PropertyChanged}"
                   HorizontalContentAlignment="Stretch"
                   ScrollViewer.VerticalScrollBarVisibility="Disabled">
             <ListBox.ItemTemplate>
@@ -126,7 +120,7 @@
                                     Content="{Binding Symbol,UpdateSourceTrigger=PropertyChanged}"
                                     Command="{Binding DataContext.ButtonClickCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding Asset,UpdateSourceTrigger=PropertyChanged}"
-                                    Style="{StaticResource  ButtonStyleNew}"
+                                    Style="{DynamicResource ButtonStyleNew}"
                                     FontSize="24"
                                     Foreground="Black"
                                     Background="Transparent"
@@ -141,7 +135,7 @@
                                     Content="{Binding IsBuyers,UpdateSourceTrigger=PropertyChanged}"
                                     Command="{Binding DataContext.ButtonClickCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding Asset,UpdateSourceTrigger=PropertyChanged}"
-                                    Style="{StaticResource  ButtonStyleNew}"
+                                    Style="{DynamicResource ButtonStyleNew}"
                                     FontSize="24"
                                     Foreground="Black"
                                     Background="Transparent"
@@ -156,7 +150,7 @@
                                     Content="{Binding Price,UpdateSourceTrigger=PropertyChanged}"
                                     Command="{Binding DataContext.ButtonClickCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding Asset,UpdateSourceTrigger=PropertyChanged}"
-                                    Style="{StaticResource  ButtonStyleNew}"
+                                    Style="{DynamicResource ButtonStyleNew}"
                                     FontSize="24"
                                     Foreground="Black"
                                     Background="Transparent"
@@ -171,7 +165,7 @@
                                     Content="{Binding QTY,UpdateSourceTrigger=PropertyChanged}"
                                     Command="{Binding DataContext.ButtonClickCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding Asset,UpdateSourceTrigger=PropertyChanged}"
-                                    Style="{StaticResource  ButtonStyleNew}"
+                                    Style="{DynamicResource ButtonStyleNew}"
                                     FontSize="24"
                                     Foreground="Black"
                                     Background="Transparent"
@@ -186,7 +180,7 @@
                                     Content="{Binding Time,UpdateSourceTrigger=PropertyChanged}"
                                     Command="{Binding DataContext.ButtonClickCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding Asset,UpdateSourceTrigger=PropertyChanged}"
-                                    Style="{StaticResource  ButtonStyleNew}"
+                                    Style="{DynamicResource ButtonStyleNew}"
                                     FontSize="24"
                                     Foreground="Black"
                                     Background="Transparent"
@@ -199,10 +193,8 @@
                                     Cursor="Hand" />
                         </Grid>
                     </Border>
-
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
-
     </Grid>
 </Page>
