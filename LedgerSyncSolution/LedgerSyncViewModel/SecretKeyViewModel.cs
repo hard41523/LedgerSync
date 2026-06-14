@@ -1,14 +1,12 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using LedgerSyncModel;
 using LedgerSyncViewModel.Helper;
 using System;
-using System.Collections.Generic;
-using System.Data;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
+using System.Windows;
 
 namespace LedgerSyncViewModel
 {
@@ -23,30 +21,52 @@ namespace LedgerSyncViewModel
         private SecretKeyModel secretKeyModels;
 
         [RelayCommand]
-        public async void SecretKeyViewLoad()
+        public void SecretKeyViewLoad()
         {
-
-            //var priceresult = await tradingAccountTrade.AccountTradeList("BTCUSDT");
-
-            //var result = await tradingAccountTrade.AccountInformation(8000);
-
-            //var results = await wallet.FundingWallet();
-            //Ioc.Default.GetService<ShellViewModel>()
             if (!string.IsNullOrEmpty(SecretKeyModels.ApiKey) && !string.IsNullOrEmpty(SecretKeyModels.ApiSecret))
-            {
                 Ioc.Default.GetService<ShellViewModel>().QuerySecretKey();
-            }
-
         }
 
         [RelayCommand]
-        public async void SaveSecretKey()
+        public void SaveSecretKey()
         {
-            if (!string.IsNullOrEmpty( SecretKeyModels.ApiKey) && !string.IsNullOrEmpty(SecretKeyModels.ApiSecret)) 
+            if (!ValidateKeys(SecretKeyModels.ApiKey, SecretKeyModels.ApiSecret))
+                return;
+
+            Ioc.Default.GetService<ShellViewModel>().InsertSecretKey();
+        }
+
+        /// <summary>
+        /// Binance API keys are 64-character alphanumeric strings.
+        /// Validates both key and secret before saving.
+        /// </summary>
+        private bool ValidateKeys(string apiKey, string apiSecret)
+        {
+            if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(apiSecret))
             {
-                Ioc.Default.GetService<ShellViewModel>().InsertSecretKey();
+                MessageBox.Show("API Key and Secret cannot be empty.", "Validation",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
             }
-   
+
+            // Binance keys: 64 alphanumeric characters
+            var keyPattern = new Regex(@"^[A-Za-z0-9]{64}$");
+
+            if (!keyPattern.IsMatch(apiKey.Trim()))
+            {
+                MessageBox.Show("Invalid API Key format. Binance keys must be 64 alphanumeric characters.",
+                    "Validation", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            if (!keyPattern.IsMatch(apiSecret.Trim()))
+            {
+                MessageBox.Show("Invalid API Secret format. Binance secrets must be 64 alphanumeric characters.",
+                    "Validation", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            return true;
         }
     }
 }

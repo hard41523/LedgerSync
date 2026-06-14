@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Markup;
 
 namespace LedgerSyncViewModel.Helper
@@ -12,13 +8,25 @@ namespace LedgerSyncViewModel.Helper
     {
         public string Key { get; set; }
 
+        // FIX: store handler reference so we can unsubscribe and avoid memory leak
+        private EventHandler _languageChangedHandler;
+
         public LocExtension(string key) => Key = key;
 
         public override object ProvideValue(IServiceProvider serviceProvider)
         {
-            LocalizationManager.OnLanguageChanged += (_, __) =>
+            // FIX: unsubscribe previous handler before subscribing to avoid duplicate handlers
+            if (_languageChangedHandler != null)
+                LocalizationManager.OnLanguageChanged -= _languageChangedHandler;
+
+            _languageChangedHandler = (_, __) =>
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Value)));
-            return Value;
+
+            LocalizationManager.OnLanguageChanged += _languageChangedHandler;
+
+            // FIX: return 'this' so WPF can bind to Value property and receive PropertyChanged
+            // Previously returned Value (plain string) - WPF had no way to update on language change
+            return this;
         }
 
         public object Value => LocalizationManager.Get(Key);
