@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using LedgerSyncModel.Entity;
 using System;
 using System.Collections.Generic;
@@ -35,6 +35,12 @@ namespace LedgerSyncModel
 
         [ObservableProperty]
         private WindowState systemState;
+
+        /// <summary>
+        /// Icon character for the maximize/restore toggle button (\uEF2E = restore, \uEF2F = maximize).
+        /// </summary>
+        [ObservableProperty]
+        private string maxOrNormal = "\uEF2E";
 
         [ObservableProperty]
         private int totalPage;
